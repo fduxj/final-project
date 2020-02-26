@@ -1,0 +1,56 @@
+---
+title: "final"
+author: "xj"
+date: "2020/2/26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(caret)
+library(rattle)
+```
+
+# data input & tidy
+```{r}
+train_df <- 
+    read_csv("pml-training.csv") %>% 
+    select_if(~sum(is.na(.)) < 100) %>% 
+    select(-1) %>% 
+    mutate(classe = as.factor(classe) )
+# train_df[, colSums(is.na(train_df)) < 100]
+
+test_df <- read_csv("pml-testing.csv")
+
+
+nzv <- nearZeroVar(train_df)
+train_new <- train_df[,-nzv]
+```
+
+Since there are "NA" columns, so I remove them and then use `nearZeroVar()` to remove some variable that has or almost has no variance.
+
+# Train model with decision tree
+```{r}
+trControl <- trainControl(method = "repeatedcv", number = 10,repeats = 5)
+set.seed(10086)
+# fit decision tree model
+tree.fit <- train(classe~.,data = train_new,
+                  method = "rpart",
+                  trControl = trControl)
+# result 
+print(tree.fit)
+
+# plot
+fancyRpartPlot(tree.fit$finalModel)
+```
+
+I use 10-fold cv and repeat it for 5 times.
+
+
+# Prediction
+```{r}
+pred <- predict(tree.fit,test_df)
+pred
+```
+
